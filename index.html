@@ -279,7 +279,7 @@
     </div>
 
     <div id="scene-video" class="hidden">
-        <video id="video-player" playsinline>
+       <video id="video-player" playsinline webkit-playsinline muted></video>
             <source src="" type="video/mp4">
             您的瀏覽器不支援影片播放。
         </video>
@@ -333,7 +333,7 @@
             videoPlayer.load();
             
             videoPlayer.play().then(() => {
-                videoPlayer.playbackRate = 3.0; // 加速過場
+                videoPlayer.playbackRate = 2.0; // 加速過場
             }).catch(e => {
                 // 失敗處理
                 alert(`過場影片播放失敗：${videoPath}`);
@@ -488,16 +488,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         }
-        document.addEventListener('click', function() {
-            const bgm = document.getElementById('map-bgm');
-            if (bgm.paused && !mapScene.classList.contains('hidden')) {
-                bgm.play().catch(e => console.log("還沒準備好播放音樂"));
-            }
+       // 定義一個解鎖音樂的函式 (Safari 專用雙重保險)
+    function unlockAudio() {
+        const bgm = document.getElementById('map-bgm');
+        
+        // 只要音樂沒在播，就嘗試播放
+        if (bgm && bgm.paused) {
+            bgm.volume = 0.3; 
+            bgm.play().then(() => {
+                console.log("背景音樂啟動成功");
+                // 成功後，移除監聽，避免一直觸發
+                document.removeEventListener('click', unlockAudio);
+                document.removeEventListener('touchstart', unlockAudio);
+            }).catch(e => {
+                console.log("還不能播放，等待下一次互動");
+            });
+        }
+    }
+
+    // 綁定兩種事件：點擊(電腦) 和 觸摸(手機 Safari)
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
         }, { once: true });
     </script>
 </body>
 
 </html>
+
 
 
 
