@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奇幻島嶼探險</title>
+    <style>
+        /* === 語言切換按鈕樣式 (右上角) === */
+        #lang-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: auto;
+            z-index: 100;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #lang-switch img {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+        }
+
+        #lang-switch:active {
+            transform: scale(0.9);
+        }
+        /* CSS 樣式區 - 控制外觀 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            font-family: "微軟正黑體", sans-serif;
+            overflow: hidden; /* 防止捲動 */
+        }
+/* === 0. 公司片頭動畫樣式 (影片版) === */
+#scene-intro {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #000;
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 1.0s ease-out;
+    }
+
+    /* 設定片頭影片的大小 */
+    #intro-video {
+        width: 100%;
+        max-width: 800px;
+        height: auto;
+        object-fit: contain;
+    }
+
+    /* 隱藏用的設定 */
+    .fade-out {
+        opacity: 0;
+        pointer-events: none;
+    }
+        /* 隱藏元素的類別 */
+        .hidden {
+            display: none !important;
+        }
+
+        /* 1. 地圖頁面容器 */
+        #scene-map {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('map.jpg'); /* 主地圖檔案 */
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 透明按鈕 (Hotspots) 設定 */
+        .hotspot {
+            position: absolute;
+            /* border: 2px solid red;  測試時可以把這行打開來看按鈕在哪 */
+            cursor: pointer;
+
+            background-color: transparent; /* 確保背景全透明 */
+            background-repeat: no-repeat;  /* 不要重複平鋪 */
+            background-position: center;   /* 圖片置中 */
+            background-size: contain;      /* 讓圖片保持比例縮放，完整顯示在框框內 */
+            
+            /* 增加一點點濾鏡效果，讓按鈕看起來有層次 (選用) */
+            filter: drop-shadow(0px 0px 5px rgba(255, 255, 255, 0.5));
+            border-radius: 50%; /* 圓形感應區 */
+            background-color: rgba(255, 255, 255, 0); /* 全透明 */
+            tap-highlight-color: transparent; /* 手機點擊時不閃爍 */
+        }
+
+     /* === 設定五個島嶼的感應位置 (針對新地圖 MAP.jpg 調整) === */
+        
+        /* 1. 惡龍山 (左上 - 黑色尖山) */
+        #btn-dragon { 
+            top: 5%; left: 5%; width: 35%; height: 25%; /* 位置可微調 */
+            background-image: url('icon_dragon.png');
+        }
+
+        /* 2. 火山 (右上 - 噴發熔岩) */
+        #btn-volcano { 
+            top: 18%; right: 5%; width: 35%; height: 25%; 
+            background-image: url('icon_volcano.png');
+        }
+
+        /* 3. 遊樂園 (中左 - 彩虹瀑布區) */
+        /* 這裡對應原本的 park 影片 */
+        #btn-park { 
+            top: 42%; left: 15%; width: 40%; height: 20%; 
+            background-image: url('icon_park.png'); 
+        }
+        
+        /* 4. 城堡 (左下 - 希臘神殿建築) */
+        /* 因為檔案原本命名為 castle，所以我們把 castle 按鈕設在這裡 */
+        #btn-castle { 
+           /* 這裡原本是神廟的座標設定 */
+           bottom: 25%; 
+            right: 0%; 
+            width: 30%; 
+            height: 20%; 
+            /* 圖片還是城堡 */
+            background-image: url('icon_castle.png');
+        }
+        
+        /* 5. 神廟 (右下 - 連接橋樑的小島) */
+        #btn-temple { 
+           /* 這裡原本是城堡的座標設定 */
+           bottom: 0%; 
+            left: 0%; 
+            width: 55%; 
+            height: 40%; 
+            /* 圖片還是神廟 */
+            background-image: url('icon_temple.png');
+        }
+
+        /* 2. 影片播放容器 */
+        #scene-video {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        
+        video {
+            width: 100%;
+            max-height: 100%;
+        }
+
+        /* 3. 結果頁面容器 */
+        #scene-result {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* 讓內容在垂直方向置中，而不是靠下 */
+            align-items: center;
+            padding-bottom: 0px; /* 移除底部的 padding */
+            gap: 20px; /* 增加兩個按鈕之間的距離 */
+        }
+
+        /* 按鈕樣式 */
+        .action-btn {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 80%;
+            text-align: center;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .action-btn:active {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .primary-btn {
+            background-color: #e6b800; /* 金色按鈕 */
+            color: #000;
+            border: none;
+            font-weight: bold;
+        }
+/* === 呼吸動畫設定 === */
+@keyframes breathe {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); filter: brightness(1.2); } /* 變大並變亮 */
+            100% { transform: scale(1); }
+        }
+
+        /* 讓所有按鈕套用這個動畫 */
+        .hotspot {
+            animation: breathe 2s infinite ease-in-out;
+        }
+        .img-btn-container {
+        display: block;
+        width: 60%;
+        max-width: 300px;
+        margin: 10px auto;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        padding: 0;
+        text-align: center;
+        transition: transform 0.2s;
+        text-decoration: none;
+    }
+
+    .img-btn-container img {
+        width: 100%;
+        height: auto;
+        display: block;
+        filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); 
+    }
+
+    .img-btn-container:hover {
+        transform: scale(1.05);
+    }
+
+    .img-btn-container:active {
+        transform: scale(0.95);
+    }
+/* === 結果頁的循環背景影片 === */
+#result-bg-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 關鍵：讓影片像背景圖一樣填滿，不會變形 */
+            z-index: 0;        /* 放在最底層 */
+        }
+
+        /* 確保按鈕浮在影片上面 (這段很重要，不然按鈕會被影片蓋住按不到) */
+        #scene-result .img-btn-container {
+            position: relative;
+            z-index: 10;       /* 放在比影片高的層級 */
+        }
+    /* ▲▲▲ 貼到這邊為止 ▲▲▲ */
+    </style>
+</head>
+<body>
+    <div id="scene-intro">
+        <video id="intro-video" src="intro.mp4" muted autoplay playsinline></video>
+    </div>
+    <div id="lang-switch" onclick="toggleLanguage()">
+        <img id="img-lang" src="lang_to_en.png">
+    </div>
+    <div id="scene-map">
+        <div class="hotspot" id="btn-park" onclick="playScene('park')"></div>
+        <div class="hotspot" id="btn-volcano" onclick="playScene('volcano')"></div>
+        <div class="hotspot" id="btn-dragon" onclick="playScene('dragon')"></div>
+        <div class="hotspot" id="btn-castle" onclick="playScene('castle')"></div>
+        <div class="hotspot" id="btn-temple" onclick="playScene('temple')"></div>
+    </div>
+
+    <div id="scene-video" class="hidden">
+        <video id="video-player" playsinline>
+            <source src="" type="video/mp4">
+            您的瀏覽器不支援影片播放。
+        </video>
+    </div>
+
+    <div id="scene-result" class="hidden">
+        <video id="result-bg-video" loop muted playsinline></video>
+        <a href="#" id="link-company" class="img-btn-container">
+            <img id="img-company" src="btn_company.png" alt="前往公司網頁">
+        </a>
+
+        <div onclick="resetMap()" class="img-btn-container">
+            <img id="img-back" src="btn_back.png" alt="回到地圖">
+        </div>
+
+    </div>
+
+    <script>
+        // 設定區：請在這裡更換你的公司網址
+        const companyUrl = "https://www.google.com"; 
+
+        // 取得 DOM 元素
+        const mapScene = document.getElementById('scene-map');
+        const videoScene = document.getElementById('scene-video');
+        const resultScene = document.getElementById('scene-result');
+        const videoPlayer = document.getElementById('video-player');
+        const companyLink = document.getElementById('link-company');
+
+        // 設定公司連結
+        companyLink.href = companyUrl;
+
+        // 用來記錄當前選的是哪個島
+        let currentIsland = '';
+
+        // 功能：開始播放某個島嶼的劇情
+        function playScene(islandName) {
+            currentIsland = islandName;
+
+            // 1. 切換顯示區塊
+            mapScene.classList.add('hidden');
+            resultScene.classList.add('hidden');
+            videoScene.classList.remove('hidden');
+
+            // 2. 設定影片來源
+            videoPlayer.src = `video_${islandName}.mp4`;
+            
+            // 3. 載入並播放 (注意順序)
+            videoPlayer.load(); // 載入時會重置速度，所以速度要寫在後面
+            
+            videoPlayer.play().then(() => {
+                // === 關鍵修改：確定開始播放後，再加速 ===
+                videoPlayer.playbackRate = 3.0; 
+                // ======================================
+            }).catch(e => {
+                console.log("自動播放被瀏覽器阻擋，需要使用者互動", e);
+            });
+        }
+
+        // 監聽：當影片播放結束時
+        videoPlayer.onended = function() {
+            showResult();
+        };
+
+        // 功能：顯示結果圖
+        function showResult() {
+            videoScene.classList.add('hidden');
+            resultScene.classList.remove('hidden');
+
+            // 1. 抓到背景影片元素
+            const bgVideo = document.getElementById('result-bg-video');
+            
+            // 2. 設定影片來源 (變成 loop_xxx.mp4)
+            bgVideo.src = `loop_${currentIsland}.mp4`;
+            
+            // 3. 播放
+            bgVideo.play().catch(e => console.log("背景循環播放受阻", e));
+        }
+
+        // 功能：回到首頁地圖
+        function resetMap() {
+            resultScene.classList.add('hidden');
+            videoScene.classList.add('hidden');
+            mapScene.classList.remove('hidden');
+            
+            // 1. 清空過場劇情影片
+            videoPlayer.src = "";
+            
+            // 2. 也要清空背景循環影片 (省電、省流量)
+            const bgVideo = document.getElementById('result-bg-video');
+            bgVideo.pause();
+            bgVideo.src = "";
+
+            currentIsland = '';
+        }
+// === 片頭動畫控制區 (影片版) ===
+window.onload = function() {
+            const introScene = document.getElementById('scene-intro');
+            const introVideo = document.getElementById('intro-video');
+
+            // 監聽：當影片播放結束時
+            introVideo.onended = function() {
+                // 1. 開始淡出 (CSS會處理漸變動畫)
+                introScene.classList.add('fade-out');
+                
+                // 2. 等待 1秒動畫結束後，徹底移除這一層
+                setTimeout(() => {
+                    introScene.style.display = 'none';
+                }, 1000);
+            };
+
+            // 強制播放 (確保手機版能自動跑)
+            introVideo.play().catch(e => {
+                console.log("片頭自動播放受阻", e);
+                // 如果真的播不出來，直接關掉，避免卡黑畫面
+                introScene.style.display = 'none';
+            });
+        };
+        // === 語言切換控制 (獨立的功能) ===
+        let currentLang = 'cn'; // 預設為中文
+
+        function toggleLanguage() {
+            // 1. 取得需要換圖的元素
+            const imgLang = document.getElementById('img-lang');
+            const imgCompany = document.getElementById('img-company');
+            const imgBack = document.getElementById('img-back');
+
+            // 2. 定義 5 個島嶼的名字
+            const islands = ['dragon', 'volcano', 'park', 'castle', 'temple'];
+
+            if (currentLang === 'cn') {
+                // --- 切換成英文 ---
+                currentLang = 'en';
+                console.log("切換成英文");
+
+                // 換開關圖
+                imgLang.src = 'lang_to_cn.png';
+                // 換結果頁按鈕
+                imgCompany.src = 'btn_company_en.png';
+                imgBack.src = 'btn_back_en.png';
+                // 換地圖島嶼圖
+                islands.forEach(name => {
+                    document.getElementById(`btn-${name}`).style.backgroundImage = `url('icon_${name}_en.png')`;
+                });
+
+            } else {
+                // --- 切換成中文 ---
+                currentLang = 'cn';
+                console.log("切換成中文");
+
+                // 換開關圖
+                imgLang.src = 'lang_to_en.png';
+                // 換結果頁按鈕
+                imgCompany.src = 'btn_company.png';
+                imgBack.src = 'btn_back.png';
+                // 換地圖島嶼圖
+                islands.forEach(name => {
+                    document.getElementById(`btn-${name}`).style.backgroundImage = `url('icon_${name}.png')`;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
