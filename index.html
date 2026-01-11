@@ -440,28 +440,43 @@
     // === 語言切換控制 ===
     let currentLang = 'cn'; 
     function toggleLanguage() {
+        // === 語言切換控制 (防呆修正版) ===
+    let currentLang = 'cn'; 
+    function toggleLanguage() {
+        // 1. 嘗試取得元素 (如果找不到，變數會是 null)
         const titleImg = document.getElementById('img-title');
         const companyImg = document.getElementById('img-company');
         const companyLink = document.getElementById('link-company');
+        const langBtnImg = document.getElementById('img-lang'); // 順便抓一下語言按鈕自己
         
-        // 切換語言狀態
+        // 2. 切換語言狀態
         if (currentLang === 'cn') {
             currentLang = 'en';
-            titleImg.src = 'title_en.png'; 
-            companyImg.src = 'btn_company_en.png'; 
-            companyLink.href = "https://www.google.com/?hl=en"; 
+            
+            // ★關鍵修正：前面加個 if(變數)，確定東西存在才去改，不然會報錯
+            if(titleImg) titleImg.src = 'title_en.png'; 
+            if(companyImg) companyImg.src = 'btn_company_en.png'; 
+            if(companyLink) companyLink.href = "https://www.google.com/?hl=en";
+            
+            // 順便讓右上角的按鈕也換圖 (變成 "轉中文")
+            if(langBtnImg) langBtnImg.src = 'lang_to_cn.png'; 
+
         } else {
             currentLang = 'cn';
-            titleImg.src = 'title.png'; 
-            companyImg.src = 'btn_company.png'; 
-            companyLink.href = "https://www.google.com"; 
+            
+            if(titleImg) titleImg.src = 'title.png'; 
+            if(companyImg) companyImg.src = 'btn_company.png'; 
+            if(companyLink) companyLink.href = "https://www.google.com"; 
+            
+            // 順便讓右上角的按鈕換回來
+            if(langBtnImg) langBtnImg.src = 'lang_to_en.png'; 
         }
 
-        // 切換按鈕圖示
+        // 3. 切換按鈕圖示 (這段原本寫得很好，不用動，但也加個保護)
         const islands = ['dragon', 'volcano', 'park', 'castle', 'temple'];
         islands.forEach(name => {
             const btn = document.getElementById(`btn-${name}`);
-            if(btn) {
+            if(btn) { // 這裡原本就有保護，很好
                 if (currentLang === 'en') {
                     btn.style.backgroundImage = `url('icon_${name}_en.png')`;
                 } else {
@@ -470,7 +485,7 @@
             }
         });
         
-        // 切換回首頁按鈕
+        // 4. 切換回首頁按鈕
         const backImg = document.getElementById('img-back');
         if(backImg) {
             backImg.src = (currentLang === 'en') ? 'btn_back_en.png' : 'btn_back.png';
@@ -501,6 +516,7 @@
 </body>
 
 </html>
+
 
 
 
