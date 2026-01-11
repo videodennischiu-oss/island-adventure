@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>奇幻島嶼探險</title>
-    
     <style>
         /* === 語言切換按鈕樣式 (右上角) === */
         #lang-switch {
@@ -310,32 +309,26 @@
         let currentIsland = '';
 
         // 功能：開始播放某個島嶼的劇情
-       // 功能：開始播放某個島嶼的劇情 (無縫優化版)
         function playScene(islandName) {
             currentIsland = islandName;
 
-            // 1. 先設定影片來源
+            // 1. 切換顯示區塊
+            mapScene.classList.add('hidden');
+            resultScene.classList.add('hidden');
+            videoScene.classList.remove('hidden');
+
+            // 2. 設定影片來源
             videoPlayer.src = `video_${islandName}.mp4`;
             
-            // 2. 載入 (這時候地圖還在，使用者不會看到黑畫面)
-            videoPlayer.load(); 
+            // 3. 載入並播放 (注意順序)
+            videoPlayer.load(); // 載入時會重置速度，所以速度要寫在後面
             
-            // 3. 嘗試播放
             videoPlayer.play().then(() => {
-                // === 關鍵修改：等真的開始播了，才切換畫面 ===
-                
-                // A. 顯示影片區
-                videoScene.classList.remove('hidden');
-                
-                // B. 隱藏地圖區 (無縫接軌)
-                mapScene.classList.add('hidden');
-                resultScene.classList.add('hidden');
-                
-                // C. 加速
+                // === 關鍵修改：確定開始播放後，再加速 ===
                 videoPlayer.playbackRate = 3.0; 
-                
+                // ======================================
             }).catch(e => {
-                console.log("自動播放被阻擋或失敗", e);
+                console.log("自動播放被瀏覽器阻擋，需要使用者互動", e);
             });
         }
 
