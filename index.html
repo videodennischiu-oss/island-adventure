@@ -320,7 +320,7 @@
       // 功能：開始播放某個島嶼的劇情 (雙軌播放無縫版)
         function playScene(islandName) {
             currentIsland = islandName;
-            document.getElementById('map-bgm').pause();
+            
 
             // 1. 畫面設定：
             mapScene.classList.add('hidden');      // 關掉地圖
@@ -379,7 +379,7 @@
             bgVideo.src = "";
 
             currentIsland = '';
-            document.getElementById('map-bgm').play().catch(e => console.log("音樂播放受阻"));
+            
         }
 // === 片頭動畫控制區 (影片版) ===
 window.onload = function() {
@@ -457,5 +457,6 @@ window.onload = function() {
 </body>
 
 </html>
+
 
 
