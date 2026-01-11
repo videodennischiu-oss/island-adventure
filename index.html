@@ -308,28 +308,33 @@
         // 用來記錄當前選的是哪個島
         let currentIsland = '';
 
-        // 功能：開始播放某個島嶼的劇情
+       // 功能：開始播放某個島嶼的劇情 (背景偷跑優化版)
         function playScene(islandName) {
             currentIsland = islandName;
 
-            // 1. 切換顯示區塊
+            // 1. 畫面切換：顯示過場影片層，隱藏地圖
             mapScene.classList.add('hidden');
             resultScene.classList.add('hidden');
             videoScene.classList.remove('hidden');
 
-            // 2. 設定影片來源
-            videoPlayer.src = `video_${islandName}.mp4`;
-            
-            // 3. 載入並播放 (注意順序)
-            videoPlayer.load(); // 載入時會重置速度，所以速度要寫在後面
+            // --- A. 處理過場影片 (前景) ---
+            const videoPath = `video_${islandName}.mp4`;
+            videoPlayer.src = videoPath;
+            videoPlayer.load();
             
             videoPlayer.play().then(() => {
-                // === 關鍵修改：確定開始播放後，再加速 ===
-                videoPlayer.playbackRate = 3.0; 
-                // ======================================
+                videoPlayer.playbackRate = 3.0; // 加速過場
             }).catch(e => {
-                console.log("自動播放被瀏覽器阻擋，需要使用者互動", e);
+                // 如果失敗跳警告，並重置
+                alert(`過場影片播放失敗：${videoPath}`);
+                resetMap();
             });
+
+            // --- B. 關鍵優化：背景循環影片「偷跑預載」 (背景) ---
+            // 趁使用者在看過場的時候，我們先把背景影片載入好！
+            const bgVideo = document.getElementById('result-bg-video');
+            bgVideo.src = `loop_${islandName}.mp4`;
+            bgVideo.load(); // 只是載入資料，先不要 play
         }
 
         // 監聽：當影片播放結束時
@@ -337,19 +342,21 @@
             showResult();
         };
 
-        // 功能：顯示結果圖
+        // 功能：顯示結果圖 (無縫接軌版)
         function showResult() {
+            // 1. 隱藏過場影片層
             videoScene.classList.add('hidden');
+            
+            // 2. 顯示結果層
             resultScene.classList.remove('hidden');
 
-            // 1. 抓到背景影片元素
+            // 3. 播放背景 (因為 playScene 已經預載好了，這裡直接播)
             const bgVideo = document.getElementById('result-bg-video');
             
-            // 2. 設定影片來源 (變成 loop_xxx.mp4)
-            bgVideo.src = `loop_${currentIsland}.mp4`;
-            
-            // 3. 播放
-            bgVideo.play().catch(e => console.log("背景循環播放受阻", e));
+            // 注意：這裡不需要再重新設定 src，直接播放即可
+            bgVideo.play().catch(e => {
+                console.log("背景自動播放受阻", e);
+            });
         }
 
         // 功能：回到首頁地圖
@@ -436,4 +443,5 @@ window.onload = function() {
         }
     </script>
 </body>
+
 </html>
