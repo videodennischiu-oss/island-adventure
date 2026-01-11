@@ -144,6 +144,12 @@
 
         /* 2. 影片播放容器 */
         #scene-video {
+            /* ▼▼▼ 新增這四行，讓它浮起來蓋住別人 ▼▼▼ */
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 50; /* 確保它在最上層 */
+            /* ▲▲▲ 新增結束 ▲▲▲ */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -308,16 +314,16 @@
         // 用來記錄當前選的是哪個島
         let currentIsland = '';
 
-       // 功能：開始播放某個島嶼的劇情 (背景偷跑優化版)
+      // 功能：開始播放某個島嶼的劇情 (雙軌播放無縫版)
         function playScene(islandName) {
             currentIsland = islandName;
 
-            // 1. 畫面切換：顯示過場影片層，隱藏地圖
-            mapScene.classList.add('hidden');
-            resultScene.classList.add('hidden');
-            videoScene.classList.remove('hidden');
+            // 1. 畫面設定：
+            mapScene.classList.add('hidden');      // 關掉地圖
+            videoScene.classList.remove('hidden'); // 打開過場影片 (它在最上層，蓋住大家)
+            resultScene.classList.remove('hidden'); // ★關鍵：打開結果層 (讓它在下面偷偷跑)
 
-            // --- A. 處理過場影片 (前景) ---
+            // --- A. 播放過場影片 (前景) ---
             const videoPath = `video_${islandName}.mp4`;
             videoPlayer.src = videoPath;
             videoPlayer.load();
@@ -325,16 +331,18 @@
             videoPlayer.play().then(() => {
                 videoPlayer.playbackRate = 3.0; // 加速過場
             }).catch(e => {
-                // 如果失敗跳警告，並重置
+                // 失敗處理
                 alert(`過場影片播放失敗：${videoPath}`);
                 resetMap();
             });
 
-            // --- B. 關鍵優化：背景循環影片「偷跑預載」 (背景) ---
-            // 趁使用者在看過場的時候，我們先把背景影片載入好！
+            // --- B. 同時播放背景循環影片 (背景) ---
+            // 因為上面已經把 resultScene 打開了，這裡直接 Play，它會在黑幕下播放
             const bgVideo = document.getElementById('result-bg-video');
             bgVideo.src = `loop_${islandName}.mp4`;
-            bgVideo.load(); // 只是載入資料，先不要 play
+            
+            // 直接播放！不用怕被看到，因為 videoScene 有黑色背景擋著
+            bgVideo.play().catch(e => console.log("背景偷跑失敗", e));
         }
 
         // 監聽：當影片播放結束時
@@ -342,21 +350,14 @@
             showResult();
         };
 
-        // 功能：顯示結果圖 (無縫接軌版)
+        // 功能：顯示結果圖 (掀開蓋子版)
         function showResult() {
-            // 1. 隱藏過場影片層
+            // 只要把最上層的過場影片關掉，
+            // 底下原本就在跑的循環影片就會瞬間露出來！
             videoScene.classList.add('hidden');
             
-            // 2. 顯示結果層
-            resultScene.classList.remove('hidden');
-
-            // 3. 播放背景 (因為 playScene 已經預載好了，這裡直接播)
-            const bgVideo = document.getElementById('result-bg-video');
-            
-            // 注意：這裡不需要再重新設定 src，直接播放即可
-            bgVideo.play().catch(e => {
-                console.log("背景自動播放受阻", e);
-            });
+            // 備註：結果層本來就是開的，所以不用再 remove('hidden')
+            // 備註：影片也本來就在播，所以不用再 play()
         }
 
         // 功能：回到首頁地圖
@@ -445,3 +446,4 @@ window.onload = function() {
 </body>
 
 </html>
+
