@@ -301,162 +301,198 @@
     </audio>
     
     <script>
-        // 設定區：請在這裡更換你的公司網址
-        const companyUrl = "https://www.google.com"; 
+       // 設定區：請在這裡更換你的公司網址
+       const companyUrl = "https://www.google.com"; 
 
-        // 取得 DOM 元素
-        const mapScene = document.getElementById('scene-map');
-        const videoScene = document.getElementById('scene-video');
-        const resultScene = document.getElementById('scene-result');
-        const videoPlayer = document.getElementById('video-player');
-        const companyLink = document.getElementById('link-company');
+// 取得 DOM 元素
+const mapScene = document.getElementById('scene-map');
+const videoScene = document.getElementById('scene-video');
+const resultScene = document.getElementById('scene-result');
+const videoPlayer = document.getElementById('video-player');
+const companyLink = document.getElementById('link-company');
 
-        // 設定公司連結
-        companyLink.href = companyUrl;
+// 設定公司連結
+if(companyLink) companyLink.href = companyUrl;
 
-        // 用來記錄當前選的是哪個島
-        let currentIsland = '';
+// 用來記錄當前選的是哪個島
+let currentIsland = '';
 
-      // 功能：開始播放某個島嶼的劇情 (雙軌播放無縫版)
-        function playScene(islandName) {
-            currentIsland = islandName;
-            
+// 功能：開始播放某個島嶼的劇情 (雙軌播放無縫版)
+function playScene(islandName) {
+    currentIsland = islandName;
+    
+    // 1. 畫面設定：
+    mapScene.classList.add('hidden');       // 關掉地圖
+    videoScene.classList.remove('hidden'); // 打開過場影片 (它在最上層)
+    resultScene.classList.remove('hidden'); // 打開結果層 (讓它在下面偷偷跑)
 
-            // 1. 畫面設定：
-            mapScene.classList.add('hidden');      // 關掉地圖
-            videoScene.classList.remove('hidden'); // 打開過場影片 (它在最上層，蓋住大家)
-            resultScene.classList.remove('hidden'); // ★關鍵：打開結果層 (讓它在下面偷偷跑)
+    // --- A. 播放過場影片 (前景) ---
+    const videoPath = `video_${islandName}.mp4`;
+    videoPlayer.src = videoPath;
+    videoPlayer.load();
+    
+    // 正常速度播放 (因為你已經把影片轉成 3 倍速了)
+    videoPlayer.play().then(() => {
+        // 播放成功
+    }).catch(e => {
+        console.log("過場影片播放失敗", e);
+        // 如果影片壞了，直接進結果頁才不會卡死
+        showResult();
+    });
 
-            // --- A. 播放過場影片 (前景) ---
-            const videoPath = `video_${islandName}.mp4`;
-            videoPlayer.src = videoPath;
-            videoPlayer.load();
-            
-            videoPlayer.play().then(() => {
-                videoPlayer.playbackRate = 3.0; // 加速過場
-            }).catch(e => {
-                // 失敗處理
-                alert(`過場影片播放失敗：${videoPath}`);
-                resetMap();
-            });
+    // --- B. 同時播放背景循環影片 (背景) ---
+    const bgVideo = document.getElementById('result-bg-video');
+    if(bgVideo) {
+        bgVideo.src = `loop_${islandName}.mp4`;
+        bgVideo.play().catch(e => console.log("背景偷跑失敗", e));
+    }
+}
 
-            // --- B. 同時播放背景循環影片 (背景) ---
-            // 因為上面已經把 resultScene 打開了，這裡直接 Play，它會在黑幕下播放
-            const bgVideo = document.getElementById('result-bg-video');
-            bgVideo.src = `loop_${islandName}.mp4`;
-            
-            // 直接播放！不用怕被看到，因為 videoScene 有黑色背景擋著
-            bgVideo.play().catch(e => console.log("背景偷跑失敗", e));
-        }
+// 監聽：當過場影片播放結束時
+videoPlayer.onended = function() {
+    showResult();
+};
 
-        // 監聽：當影片播放結束時
-        videoPlayer.onended = function() {
-            showResult();
-        };
+// 功能：顯示結果圖 (掀開蓋子版)
+function showResult() {
+    // 只要把最上層的過場影片關掉，底下的循環影片就會露出來
+    videoScene.classList.add('hidden');
+}
 
-        // 功能：顯示結果圖 (掀開蓋子版)
-        function showResult() {
-            // 只要把最上層的過場影片關掉，
-            // 底下原本就在跑的循環影片就會瞬間露出來！
-            videoScene.classList.add('hidden');
-            
-            // 備註：結果層本來就是開的，所以不用再 remove('hidden')
-            // 備註：影片也本來就在播，所以不用再 play()
-        }
+// 功能：回到首頁地圖
+function resetMap() {
+    resultScene.classList.add('hidden');
+    videoScene.classList.add('hidden');
+    mapScene.classList.remove('hidden');
+    
+    // 1. 清空過場劇情影片
+    videoPlayer.src = "";
+    
+    // 2. 清空背景循環影片 (省電)
+    const bgVideo = document.getElementById('result-bg-video');
+    if(bgVideo) {
+        bgVideo.pause();
+        bgVideo.src = ""; // 重要：清空來源避免閃爍
+    }
+    currentIsland = '';
+}
 
-        // 功能：回到首頁地圖
-        function resetMap() {
-            resultScene.classList.add('hidden');
-            videoScene.classList.add('hidden');
-            mapScene.classList.remove('hidden');
-            
-            // 1. 清空過場劇情影片
-            videoPlayer.src = "";
-            
-            // 2. 也要清空背景循環影片 (省電、省流量)
-            const bgVideo = document.getElementById('result-bg-video');
-            bgVideo.pause();
-            bgVideo.src = "";
-
-            currentIsland = '';
-            
-        }
-// === 片頭動畫控制區 (影片版) ===
-window.onload = function() {
-            const introScene = document.getElementById('scene-intro');
-            const introVideo = document.getElementById('intro-video');
-
-            // 監聽：當影片播放結束時
-            introVideo.onended = function() {
-                // 1. 開始淡出 (CSS會處理漸變動畫)
-                introScene.classList.add('fade-out');
-                
-                // 2. 等待 1秒動畫結束後，徹底移除這一層
-                setTimeout(() => {
-                    introScene.style.display = 'none';
-                }, 1000);
-            };
-
-            // 強制播放 (確保手機版能自動跑)
-            introVideo.play().catch(e => {
-                console.log("片頭自動播放受阻", e);
-                // 如果真的播不出來，直接關掉，避免卡黑畫面
-                introScene.style.display = 'none';
-            });
-        };
-        // === 語言切換控制 (獨立的功能) ===
-        let currentLang = 'cn'; // 預設為中文
-
-        function toggleLanguage() {
-            // 1. 取得需要換圖的元素
-            const imgLang = document.getElementById('img-lang');
-            const imgCompany = document.getElementById('img-company');
-            const imgBack = document.getElementById('img-back');
-
-            // 2. 定義 5 個島嶼的名字
-            const islands = ['dragon', 'volcano', 'park', 'castle', 'temple'];
-
-            if (currentLang === 'cn') {
-                // --- 切換成英文 ---
-                currentLang = 'en';
-                console.log("切換成英文");
-
-                // 換開關圖
-                imgLang.src = 'lang_to_cn.png';
-                // 換結果頁按鈕
-                imgCompany.src = 'btn_company_en.png';
-                imgBack.src = 'btn_back_en.png';
-                // 換地圖島嶼圖
-                islands.forEach(name => {
-                    document.getElementById(`btn-${name}`).style.backgroundImage = `url('icon_${name}_en.png')`;
+// === 片頭動畫控制區 (急速啟動版) ===
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const introScene = document.getElementById('scene-intro');
+    const introVideo = document.getElementById('intro-video');
+    const enterBtn = document.getElementById('btn-enter'); 
+    
+    // 1. 嘗試播放片頭的函數
+    function tryPlayIntro() {
+        if (introVideo.readyState >= 3) {
+            introScene.classList.remove('hidden');
+            introVideo.play()
+                .then(() => console.log("片頭播放成功"))
+                .catch(e => {
+                    if(enterBtn) enterBtn.classList.remove('hidden');
                 });
+        } else {
+            introVideo.addEventListener('canplay', function() {
+                introScene.classList.remove('hidden');
+                introVideo.play().catch(e => {
+                    if(enterBtn) enterBtn.classList.remove('hidden');
+                });
+            }, { once: true });
+        }
+    }
 
+    // 執行嘗試
+    tryPlayIntro();
+
+    // 2. 綁定「進入按鈕」
+    if(enterBtn) {
+        enterBtn.addEventListener('click', function() {
+            enterBtn.classList.add('hidden');
+            introVideo.play();
+        });
+    }
+    
+    // 3. 關鍵：監聽片頭結束，強制進入地圖
+    introVideo.onended = function() {
+        console.log("片頭結束，進入地圖");
+        introScene.classList.add('hidden');
+        mapScene.classList.remove('hidden'); 
+        
+        // 嘗試啟動音樂
+        const bgm = document.getElementById('map-bgm');
+        if (bgm && bgm.paused) {
+            bgm.volume = 0.3;
+            bgm.play().catch(e => console.log("等待互動啟動音樂"));
+        }
+    };
+});
+
+// === 語言切換控制 (防呆修正版) ===
+let currentLang = 'cn'; 
+function toggleLanguage() {
+    // 1. 嘗試取得元素 (找不到也不會報錯)
+    const titleImg = document.getElementById('img-title');
+    const companyImg = document.getElementById('img-company');
+    const companyLink = document.getElementById('link-company');
+    const langBtnImg = document.getElementById('img-lang'); 
+    
+    // 2. 切換語言狀態
+    if (currentLang === 'cn') {
+        currentLang = 'en';
+        if(titleImg) titleImg.src = 'title_en.png'; 
+        if(companyImg) companyImg.src = 'btn_company_en.png'; 
+        if(companyLink) companyLink.href = "https://www.google.com/?hl=en";
+        if(langBtnImg) langBtnImg.src = 'lang_to_cn.png'; 
+    } else {
+        currentLang = 'cn';
+        if(titleImg) titleImg.src = 'title.png'; 
+        if(companyImg) companyImg.src = 'btn_company.png'; 
+        if(companyLink) companyLink.href = "https://www.google.com"; 
+        if(langBtnImg) langBtnImg.src = 'lang_to_en.png'; 
+    }
+
+    // 3. 切換五個島嶼的按鈕圖示
+    const islands = ['dragon', 'volcano', 'park', 'castle', 'temple'];
+    islands.forEach(name => {
+        const btn = document.getElementById(`btn-${name}`);
+        if(btn) {
+            if (currentLang === 'en') {
+                btn.style.backgroundImage = `url('icon_${name}_en.png')`;
             } else {
-                // --- 切換成中文 ---
-                currentLang = 'cn';
-                console.log("切換成中文");
-
-                // 換開關圖
-                imgLang.src = 'lang_to_en.png';
-                // 換結果頁按鈕
-                imgCompany.src = 'btn_company.png';
-                imgBack.src = 'btn_back.png';
-                // 換地圖島嶼圖
-                islands.forEach(name => {
-                    document.getElementById(`btn-${name}`).style.backgroundImage = `url('icon_${name}.png')`;
-                });
+                btn.style.backgroundImage = `url('icon_${name}.png')`;
             }
         }
-        document.addEventListener('click', function() {
-            const bgm = document.getElementById('map-bgm');
-            if (bgm.paused && !mapScene.classList.contains('hidden')) {
-                bgm.play().catch(e => console.log("還沒準備好播放音樂"));
-            }
-        }, { once: true });
+    });
+    
+    // 4. 切換回首頁按鈕
+    const backImg = document.getElementById('img-back');
+    if(backImg) {
+        backImg.src = (currentLang === 'en') ? 'btn_back_en.png' : 'btn_back.png';
+    }
+}
+
+// === 音樂解鎖 (Safari 雙重保險版) ===
+function unlockAudio() {
+    const bgm = document.getElementById('map-bgm');
+    if (bgm && bgm.paused) {
+        bgm.volume = 0.3; 
+        bgm.play().then(() => {
+            console.log("背景音樂啟動成功");
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        }).catch(e => {});
+    }
+}
+document.addEventListener('click', unlockAudio);
+document.addEventListener('touchstart', unlockAudio);
     </script>
 </body>
 
 </html>
+
+
 
 
 
