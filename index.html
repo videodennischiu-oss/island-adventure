@@ -716,13 +716,46 @@
         });
 
         videoPlayer.addEventListener('error', function(e) {
-            console.error('影片載入錯誤:', e);
-            alert('影片載入失敗，請檢查網路連線或檔案是否存在');
-            resetMap();
+            // 只在有實際影片路徑時才顯示錯誤（避免清空時觸發）
+            if (videoPlayer.src && videoPlayer.src !== '' && videoPlayer.src !== window.location.href) {
+                console.error('影片載入錯誤:', e);
+                console.error('錯誤的影片路徑:', videoPlayer.src);
+                console.error('當前島嶼:', currentIsland);
+                console.error('networkState:', videoPlayer.networkState);
+                console.error('readyState:', videoPlayer.readyState);
+                
+                // 只在轉場過程中才顯示錯誤訊息
+                if (isTransitioning && currentIsland) {
+                    let errorMsg = '影片載入失敗\n';
+                    errorMsg += '檔案: video_' + currentIsland + '.mp4\n';
+                    errorMsg += '請確認:\n';
+                    errorMsg += '1. 檔案是否存在\n';
+                    errorMsg += '2. 檔案名稱是否正確\n';
+                    errorMsg += '3. 影片格式是否為 MP4 (H.264)\n';
+                    errorMsg += '4. 檔案大小是否過大';
+                    
+                    alert(errorMsg);
+                    resetMap();
+                }
+            }
         });
 
         bgVideo.addEventListener('error', function(e) {
-            console.error('背景影片載入錯誤:', e);
+            // 只記錄背景影片錯誤，不顯示彈窗
+            if (bgVideo.src && bgVideo.src !== '' && bgVideo.src !== window.location.href) {
+                console.error('背景影片載入錯誤:', e);
+                console.error('檔案:', bgVideo.src);
+            }
+        });
+
+        introVideo.addEventListener('error', function(e) {
+            // 片頭影片載入失敗，直接跳過
+            if (introVideo.src && introVideo.src !== '') {
+                console.error('片頭影片載入失敗，直接進入地圖', e);
+                introScene.style.display = 'none';
+                loadingOverlay.classList.add('hidden');
+                showMap();
+            }
         });
 
         // ==================== Console 日誌 ====================
