@@ -296,7 +296,10 @@
         </div>
 
     </div>
-
+    <audio id="map-bgm" loop>
+        <source src="bgm.mp3" type="audio/mp3">
+    </audio>
+    
     <script>
         // 設定區：請在這裡更換你的公司網址
         const companyUrl = "https://www.google.com"; 
@@ -317,6 +320,7 @@
       // 功能：開始播放某個島嶼的劇情 (雙軌播放無縫版)
         function playScene(islandName) {
             currentIsland = islandName;
+            document.getElementById('map-bgm').pause();
 
             // 1. 畫面設定：
             mapScene.classList.add('hidden');      // 關掉地圖
@@ -375,6 +379,7 @@
             bgVideo.src = "";
 
             currentIsland = '';
+            document.getElementById('map-bgm').play().catch(e => console.log("音樂播放受阻"));
         }
 // === 片頭動畫控制區 (影片版) ===
 window.onload = function() {
@@ -442,8 +447,15 @@ window.onload = function() {
                 });
             }
         }
+        document.addEventListener('click', function() {
+            const bgm = document.getElementById('map-bgm');
+            if (bgm.paused && !mapScene.classList.contains('hidden')) {
+                bgm.play().catch(e => console.log("還沒準備好播放音樂"));
+            }
+        }, { once: true });
     </script>
 </body>
 
 </html>
+
 
