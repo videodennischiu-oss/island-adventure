@@ -382,28 +382,69 @@
             
         }
 // === 片頭動畫控制區 (影片版) ===
-window.onload = function() {
-            const introScene = document.getElementById('scene-intro');
-            const introVideo = document.getElementById('intro-video');
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // 取得元素
+    const introScene = document.getElementById('scene-intro');
+    const introVideo = document.getElementById('intro-video');
+    
+    // 嘗試取得「進入按鈕」(如果不一定有，就用變數存起來)
+    const enterBtn = document.getElementById('btn-enter'); 
 
-            // 監聽：當影片播放結束時
-            introVideo.onended = function() {
-                // 1. 開始淡出 (CSS會處理漸變動畫)
-                introScene.classList.add('fade-out');
-                
-                // 2. 等待 1秒動畫結束後，徹底移除這一層
-                setTimeout(() => {
-                    introScene.style.display = 'none';
-                }, 1000);
-            };
+    // 檢查影片狀態並播放
+    function tryPlayIntro() {
+        // readyState: 3 (HAVE_FUTURE_DATA) 或 4 (HAVE_ENOUGH_DATA) 代表可播
+        if (introVideo.readyState >= 3) {
+            introScene.classList.remove('hidden');
+            introVideo.play()
+                .then(() => console.log("片頭秒開成功"))
+                .catch(e => {
+                    console.log("自動播放受阻", e);
+                    // 失敗時顯示按鈕讓使用者手動點
+                    if(enterBtn) enterBtn.classList.remove('hidden');
+                });
+        } else {
+            // 還沒準備好，就監聽 'canplay' 事件
+            introVideo.addEventListener('canplay', function() {
+                introScene.classList.remove('hidden');
+                introVideo.play().catch(e => {
+                    if(enterBtn) enterBtn.classList.remove('hidden');
+                });
+            }, { once: true });
+        }
+    }
 
-            // 強制播放 (確保手機版能自動跑)
-            introVideo.play().catch(e => {
-                console.log("片頭自動播放受阻", e);
-                // 如果真的播不出來，直接關掉，避免卡黑畫面
-                introScene.style.display = 'none';
-            });
-        };
+    // 執行播放嘗試
+    tryPlayIntro();
+
+    // 如果有點擊按鈕，則手動播放
+    if(enterBtn) {
+        enterBtn.addEventListener('click', function() {
+            enterBtn.classList.add('hidden');
+            introVideo.play();
+            
+            // 順便嘗試啟動背景音樂
+            const bgm = document.getElementById('map-bgm');
+            if(bgm) { bgm.volume = 0.3; bgm.play().catch(()=>{}); }
+        });
+    }
+    
+    // 監聽：片頭結束後
+    introVideo.onended = function() {
+        // 1. 隱藏片頭
+        introScene.classList.add('hidden');
+        // 2. 顯示地圖
+        const mapScene = document.getElementById('scene-map'); // 確保抓到地圖元素
+        mapScene.classList.remove('hidden');
+        
+        // 3. 嘗試播放背景音樂
+        const bgm = document.getElementById('map-bgm');
+        if (bgm && bgm.paused) {
+            bgm.volume = 0.3;
+            bgm.play().catch(e => console.log("音樂等待互動啟動"));
+        }
+    };
+});
         // === 語言切換控制 (獨立的功能) ===
         let currentLang = 'cn'; // 預設為中文
 
@@ -457,6 +498,7 @@ window.onload = function() {
 </body>
 
 </html>
+
 
 
 
