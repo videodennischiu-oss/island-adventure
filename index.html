@@ -287,9 +287,9 @@
 
     <div id="scene-result" class="hidden">
         <video id="result-bg-video" loop muted playsinline></video>
-        <a href="#" id="link-company" class="img-btn-container">
-            <img id="img-company" src="btn_company.png" alt="前往公司網頁">
-        </a>
+      <div id="btn-start-game" class="img-btn-container" onclick="goToGame()">
+            <img id="img-company" src="btn_company.png" alt="開始遊戲">
+        </div>
 
         <div onclick="resetMap()" class="img-btn-container">
             <img id="img-back" src="btn_back.png" alt="回到地圖">
@@ -303,6 +303,25 @@
     <script>
        // 設定區：請在這裡更換你的公司網址
        const companyUrl = "https://www.google.com"; 
+        // === 🏝️ 各島嶼的小遊戲網址設定 (路標系統) ===
+       const gameLinks = {
+           // 格式： "島嶼代號": "你的小遊戲網址",
+           "dragon": "https://www.youtube.com/watch?v=J9nYg8qlu8w", 
+           "volcano": "https://www.youtube.com/watch?v=EgVy_VYiCWo",
+           "park": "https://www.youtube.com/watch?v=dRWoTiAjsOw",
+           "castle": "https://www.youtube.com/watch?v=Nr3wXdsvGpg", 
+           "temple": "https://www.youtube.com/watch?v=moqws3j2ykI" 
+       };
+
+       // === 🚀 跳轉功能 ===
+       function goToGame() {
+           const targetUrl = gameLinks[currentIsland];
+           if (targetUrl && targetUrl !== "#") {
+               window.location.href = targetUrl; // 原視窗跳轉
+           } else {
+               alert("這個島嶼的遊戲還在開發中！敬請期待！");
+           }
+       }
 
 // 取得 DOM 元素
 const mapScene = document.getElementById('scene-map');
@@ -491,6 +510,7 @@ document.addEventListener('touchstart', unlockAudio);
 </body>
 
 </html>
+
 
 
 
